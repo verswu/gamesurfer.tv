@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>What game should I play today?</title>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+	<script src="./config.json"></script>
+	<script>
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+	ga('create', 'UA-72022907-1', 'auto');
+	ga('send', 'pageview');
+
+	</script>
+	<link type="text/css" rel="stylesheet" href="css/main.css" />
+</head>	
+
+<body>	
+	<div id = "bigdiv">
+		<h1 id="title"></h1>
+		<div class="center">
+			<p id="deck"></p>
+			<h1 id="introTitle">What is this?</h1>
+			<p id="intro">Click the button for a random live stream of a game currently being played on Twitch.tv. Some basic information about the game is provided, as well as links to purchase it from various sources. A fresh new stream is served each click. </p>
+		</div>
+		<br>
+		<iframe id ="player"
+			height="504" 
+			width="896" 
+			align="middle"
+			frameborder="0" 
+			scrolling="no" 
+			class="hidden"
+			allowfullscreen>
+		</iframe>
+		<br>
+		<br>
+		<button id="newGame" type = "button" data-label="Start">do it!</button> 
+	</div>
+	<div class="rightbigdiv">
+		<a href="placeholder" id="gbLink"  target="_blank"><div id="giantbomb" class="button_sliding_bg">Game Info</div></a>
+		<a href="placeholder" id="twitchLink"  target="_blank"><div id="twitch" class="button_sliding_bg">More Streams</div></a>
+		<a href="placeholder" id="amazonLink"  target="_blank"><div id="amazon" class="button_sliding_bg">Buy on Amazon</div></a>
+		<a href="placeholder" id="ebayLink"  target="_blank"><div id="ebay" class="button_sliding_bg">Buy on eBay</div></a>
+	</div>
+
+<script>
+	var loading = function(e) {
+		e.preventDefault();
+		e.stopPropagation();
+		e.target.classList.add('loading');
+		e.target.setAttribute('disabled','disabled');
+		setTimeout(function(){
+			e.target.classList.remove('loading');
+			e.target.removeAttribute('disabled');
+		},1500);
+	};
+
+	var btns = document.querySelectorAll('button');
+	for (var i=btns.length-1;i>=0;i--) {
+		btns[i].addEventListener('click',loading);
+	}
+</script>
+
+<script type="text/javascript" language="javascript"> 
+	$(function(){
+		$(window).load(function(){ // On load
+			$('.button_sliding_bg').css({'height':(($(window).height()*.21))+'px'});
+			$('.button_sliding_bg').css({'width':(($(window).height()*.21))+'px'});
+			$('#player').css({'height':(($(window).height()*.65))+'px'});
+			$('#player').css({'width':(($(window).width()*.65))+'px'});
+
+		});
+		$(window).resize(function(){ // On resize
+			$('.button_sliding_bg').css({'height':(($(window).height()*.21))+'px'});
+			$('.button_sliding_bg').css({'width':(($(window).height()*.21))+'px'});
+			$('#player').css({'height':(($(window).height()*.65))+'px'});
+			$('#player').css({'width':(($(window).width()*.65))+'px'});
+		});
+	});
+</script>
+
+<script type = "text/javascript" language = "javascript">
+
+	$(document).ready(function() { 
+		$("#player").hide();
+		var limit = 5;
+		function getRandomInt(min, max) {
+			return Math.floor(Math.random() * (max - min + 1)) + min;
+		};
+
+		$("#newGame").click(function(){
+			$("#intro").hide();
+			$("#introTitle").hide();
+			$("#player").show();
+			var gameNum = getRandomInt(0,500);
+			var gameUrl = "https://api.twitch.tv/kraken/games/top?limit="+limit+"&offset=" + gameNum;
+			$.getJSON(gameUrl, function(result){
+				for (var i = 0; i < limit; i++) {
+					giantbombId = result.top[i].game.giantbomb_id;
+					gameName = result.top[i].game.name;	
+
+					//now that we have the name, setup the links
+					var ebayUrl = "http://www.ebay.com/sch/items/?_sacat=1249&_ex_kw=&_mPrRngCbx=1&_udlo=&_udhi=&_sop=12&_fpos=&_fspt=1&_sadis=&LH_CAds=&rmvSB=true&_nkw=" + gameName
+					var amazonUrl = "http://www.amazon.com/s/ref=nb_sb_noss_2?tag=games0cb3-20&url=search-alias%3Dvideogames&field-keywords=" + gameName
+					var twitchUrl = "http://www.twitch.tv/directory/game/" + gameName
+
+					$("#ebayLink").attr("href", ebayUrl);
+					$("#amazonLink").attr("href", amazonUrl);
+					$("#twitchLink").attr("href", twitchUrl);
+
+					twitchId = result.top[i].game._id;
+					console.log(gameName + " gbid: " + giantbombId + " twitch id: " + twitchId);
+					if (giantbombId != 0) break;
+				};
+				var streamUrl = "https://api.twitch.tv/kraken/streams?game="+ gameName;
+				$.getJSON(streamUrl, function(response){
+					streamNum = getRandomInt(0, Math.floor(response.streams.length, response._total)-1);
+					channelUrl = response.streams[streamNum].channel.url;
+					channelName = response.streams[streamNum].channel.name;
+					console.log(channelName + " " + channelUrl);
+					$("#title").text(gameName);
+
+					//get the description using jsonp callback to enable cross domain
+					var baseGbUrl = "http://www.giantbomb.com/game/3030-" + giantbombId + "/";
+					$("#gbLink").attr("href", baseGbUrl);
+					var gbUrl = "http://www.giantbomb.com/api/game/3030-" + giantbombId + "/?api_key=" + config.gbapikey + "&field_list=deck, image&format=jsonp&json_callback=gameJson";
+					console.log(gbUrl);
+					$.ajax({url: gbUrl, 
+						dataType: 'jsonp', 
+						jsonpCallback: 'gameJson',
+						jsonp: false,
+						crossDomain: true,
+						error: function(gbresult){
+							alert("error");
+						}, 
+						success: function(gbresult){
+							$("#deck").text(gbresult.results.deck);
+						}
+					});
+
+
+
+
+					var source = "http://player.twitch.tv/?channel=" + channelName;
+					$("#player").attr("src", source);
+				});
+
+			});
+			
+			//so text doesn't change until after flip 
+			window.setTimeout(function () {
+		    	$('#newGame').attr('data-label', 'Flip channel');
+			}, 500);
+		});
+
+
+});
+
+</script>
+</body>
+
+</html>
